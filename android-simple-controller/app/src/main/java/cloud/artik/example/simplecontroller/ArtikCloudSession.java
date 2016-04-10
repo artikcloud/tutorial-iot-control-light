@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Samsung Electronics Co., Ltd.
+ * Copyright (C) 2016 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,24 +21,23 @@ import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 
-import io.samsungsami.websocket.Acknowledgement;
-import io.samsungsami.websocket.ActionOut;
-import io.samsungsami.websocket.DeviceChannelWebSocket;
-import io.samsungsami.websocket.Error;
-import io.samsungsami.websocket.FirehoseWebSocket;
-import io.samsungsami.websocket.MessageOut;
-import io.samsungsami.websocket.ActionIn;
-import io.samsungsami.websocket.ActionDetails;
-import io.samsungsami.websocket.ActionDetailsArray;
-import io.samsungsami.websocket.RegisterMessage;
-import io.samsungsami.websocket.SamiWebSocketCallback;
+import com.squareup.okhttp.OkHttpClient;
+
+import cloud.artik.model.Acknowledgement;
+import cloud.artik.model.ActionOut;
+import cloud.artik.websocket.DeviceChannelWebSocket;
+import cloud.artik.model.WebSocketError;
+import cloud.artik.websocket.FirehoseWebSocket;
+import cloud.artik.model.MessageOut;
+import cloud.artik.model.ActionIn;
+import cloud.artik.model.ActionDetails;
+import cloud.artik.model.ActionDetailsArray;
+import cloud.artik.model.RegisterMessage;
+import cloud.artik.websocket.ArtikCloudWebSocketCallback;
 
 public class ArtikCloudSession {
     private final static String TAG = ArtikCloudSession.class.getSimpleName();
@@ -100,19 +99,21 @@ public class ArtikCloudSession {
         return DEVICE_NAME;
     }
 
-    private void createLiveWebsocket() {
+    private void createFirehoseWebsocket() {
         try {
-            mLive = new FirehoseWebSocket(DEVICE_TOKEN, DEVICE_ID, null, null, new SamiWebSocketCallback() {
+            OkHttpClient client = new OkHttpClient();
+            client.setRetryOnConnectionFailure(true);
+            mLive = new FirehoseWebSocket(client, DEVICE_TOKEN, DEVICE_ID, null, null, null, new ArtikCloudWebSocketCallback() {
                 @Override
-                public void onOpen(short i, String s) {
-                    Log.d(TAG, "connectLiveWebsocket: onOpen()");
+                public void onOpen(int i, String s) {
+                    Log.d(TAG, "FirehoseWebSocket: onOpen()");
                     final Intent intent = new Intent(WEBSOCKET_LIVE_ONOPEN);
                     LocalBroadcastManager.getInstance(ourContext).sendBroadcast(intent);
                 }
 
                 @Override
                 public void onMessage(MessageOut messageOut) {
-                    Log.d(TAG, "connectLiveWebsocket: onMessage(" + messageOut.toString() + ")");
+                    Log.d(TAG, "FirehoseWebSocket: onMessage(" + messageOut.toString() + ")");
                     final Intent intent = new Intent(WEBSOCKET_LIVE_ONMSG);
                     intent.putExtra(SDID, messageOut.getSdid());
                     intent.putExtra(DEVICE_DATA, messageOut.getData().toString());
@@ -136,10 +137,15 @@ public class ArtikCloudSession {
                 }
 
                 @Override
-                public void onError(Error ex) {
+                public void onError(WebSocketError ex) {
                     final Intent intent = new Intent(WEBSOCKET_LIVE_ONERROR);
                     intent.putExtra("error", "mLive error: " + ex.getMessage());
                     LocalBroadcastManager.getInstance(ourContext).sendBroadcast(intent);
+                }
+
+                @Override
+                public void onPing(long timestamp) {
+                    Log.d(TAG, "FirehoseWebSocket::onPing: " + timestamp);
                 }
             });
         } catch (URISyntaxException e) {
@@ -154,21 +160,32 @@ public class ArtikCloudSession {
      */
     public void disconnectFirehoseWS() {
         if (mLive != null) {
-            mLive.close();
+            try {
+                mLive.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         mLive = null;
     }
 
     public void connectFirehoseWS() {
-        createLiveWebsocket();
-        mLive.connect();
+        createFirehoseWebsocket();
+        try {
+            mLive.connect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void createWSWebSockets() {
+    private void createDeviceChannelWebSockets() {
         try {
-            mWS = new DeviceChannelWebSocket(true, new SamiWebSocketCallback() {
+            OkHttpClient client = new OkHttpClient();
+            client.setRetryOnConnectionFailure(true);
+
+            mWS = new DeviceChannelWebSocket(true, client, new ArtikCloudWebSocketCallback() {
                 @Override
-                public void onOpen(short i, String s) {
+                public void onOpen(int i, String s) {
                     Log.d(TAG, "Registering " + DEVICE_ID);
                     final Intent intent = new Intent(WEBSOCKET_WS_ONOPEN);
                     LocalBroadcastManager.getInstance(ourContext).sendBroadcast(intent);
@@ -181,7 +198,7 @@ public class ArtikCloudSession {
                     try {
                         Log.d(TAG, "DeviceChannelWebSocket::onOpen: registering" + DEVICE_ID);
                         mWS.registerChannel(registerMessage);
-                    } catch (JsonProcessingException e) {
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
@@ -221,10 +238,15 @@ public class ArtikCloudSession {
                 }
 
                 @Override
-                public void onError(Error error) {
+                public void onError(WebSocketError error) {
                     final Intent intent = new Intent(WEBSOCKET_WS_ONERROR);
                     intent.putExtra(ERROR, "mWebSocket error: " + error.getMessage());
                     LocalBroadcastManager.getInstance(ourContext).sendBroadcast(intent);
+                }
+
+                @Override
+                public void onPing(long timestamp) {
+                    Log.d(TAG, "DeviceChannelWebSocket::onPing: " + timestamp);
                 }
             });
         } catch (URISyntaxException e) {
@@ -239,14 +261,22 @@ public class ArtikCloudSession {
      */
     public void disconnectDeviceChannelWS() {
         if (mWS != null) {
-            mWS.close();
+            try {
+                mWS.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         mWS = null;
     }
 
     public void connectDeviceChannelWS() {
-        createWSWebSockets();
-        mWS.connect();
+        createDeviceChannelWebSockets();
+        try {
+            mWS.connect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void sendOnActionInDeviceChannelWS() {
@@ -283,16 +313,16 @@ public class ArtikCloudSession {
 
         action.setName(actionName);
         actions.add(action);
-        actionDetailsArray.setActions(actions);
+        actionDetailsArray.setTags(actions);
         actionIn.setData(actionDetailsArray);
         actionIn.setCid(actionName);
         actionIn.setDdid(DEVICE_ID);
-        actionIn.setTs(BigDecimal.valueOf(System.currentTimeMillis()));
+        actionIn.setTs(System.currentTimeMillis());
 
         try {
             mWS.sendAction(actionIn);
             Log.d(TAG, "DeviceChannelWebSocket sendAction:" + actionIn.toString());
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
