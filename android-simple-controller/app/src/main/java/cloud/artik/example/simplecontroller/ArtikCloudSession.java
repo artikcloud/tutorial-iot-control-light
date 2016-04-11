@@ -21,23 +21,23 @@ import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.squareup.okhttp.OkHttpClient;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 
-import com.squareup.okhttp.OkHttpClient;
-
 import cloud.artik.model.Acknowledgement;
-import cloud.artik.model.ActionOut;
-import cloud.artik.websocket.DeviceChannelWebSocket;
-import cloud.artik.model.WebSocketError;
-import cloud.artik.websocket.FirehoseWebSocket;
-import cloud.artik.model.MessageOut;
-import cloud.artik.model.ActionIn;
 import cloud.artik.model.ActionDetails;
 import cloud.artik.model.ActionDetailsArray;
+import cloud.artik.model.ActionIn;
+import cloud.artik.model.ActionOut;
+import cloud.artik.model.MessageOut;
 import cloud.artik.model.RegisterMessage;
+import cloud.artik.model.WebSocketError;
 import cloud.artik.websocket.ArtikCloudWebSocketCallback;
+import cloud.artik.websocket.DeviceChannelWebSocket;
+import cloud.artik.websocket.FirehoseWebSocket;
 
 public class ArtikCloudSession {
     private final static String TAG = ArtikCloudSession.class.getSimpleName();
