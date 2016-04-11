@@ -18,6 +18,7 @@ package cloud.artik.example.simplecontroller;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -76,8 +77,8 @@ public class ArtikCloudSession {
     public final static String ACK = "ack";
     public final static String ERROR = "error";
 
-    private FirehoseWebSocket mLive = null; //  end point: /live
-    private DeviceChannelWebSocket mWS = null; // end point: /websocket
+    private FirehoseWebSocket mFirehoseWS = null; //  end point: /live
+    private DeviceChannelWebSocket mDeviceChannelWS = null; // end point: /websocket
 
     public static ArtikCloudSession getInstance() {
         return ourInstance;
@@ -103,7 +104,7 @@ public class ArtikCloudSession {
         try {
             OkHttpClient client = new OkHttpClient();
             client.setRetryOnConnectionFailure(true);
-            mLive = new FirehoseWebSocket(client, DEVICE_TOKEN, DEVICE_ID, null, null, null, new ArtikCloudWebSocketCallback() {
+            mFirehoseWS = new FirehoseWebSocket(client, DEVICE_TOKEN, DEVICE_ID, null, null, null, new ArtikCloudWebSocketCallback() {
                 @Override
                 public void onOpen(int i, String s) {
                     Log.d(TAG, "FirehoseWebSocket: onOpen()");
@@ -132,14 +133,14 @@ public class ArtikCloudSession {
                 @Override
                 public void onClose(int code, String reason, boolean remote) {
                     final Intent intent = new Intent(WEBSOCKET_LIVE_ONCLOSE);
-                    intent.putExtra("error", "mLive is closed. code: " + code + "; reason: " + reason);
+                    intent.putExtra("error", "mFirehoseWS is closed. code: " + code + "; reason: " + reason);
                     LocalBroadcastManager.getInstance(ourContext).sendBroadcast(intent);
                 }
 
                 @Override
                 public void onError(WebSocketError ex) {
                     final Intent intent = new Intent(WEBSOCKET_LIVE_ONERROR);
-                    intent.putExtra("error", "mLive error: " + ex.getMessage());
+                    intent.putExtra("error", "mFirehoseWS error: " + ex.getMessage());
                     LocalBroadcastManager.getInstance(ourContext).sendBroadcast(intent);
                 }
 
@@ -159,20 +160,20 @@ public class ArtikCloudSession {
      * Closes a websocket /live connection
      */
     public void disconnectFirehoseWS() {
-        if (mLive != null) {
+        if (mFirehoseWS != null) {
             try {
-                mLive.close();
+                mFirehoseWS.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        mLive = null;
+        mFirehoseWS = null;
     }
 
     public void connectFirehoseWS() {
         createFirehoseWebsocket();
         try {
-            mLive.connect();
+            mFirehoseWS.connect();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -183,7 +184,7 @@ public class ArtikCloudSession {
             OkHttpClient client = new OkHttpClient();
             client.setRetryOnConnectionFailure(true);
 
-            mWS = new DeviceChannelWebSocket(true, client, new ArtikCloudWebSocketCallback() {
+            mDeviceChannelWS = new DeviceChannelWebSocket(true, client, new ArtikCloudWebSocketCallback() {
                 @Override
                 public void onOpen(int i, String s) {
                     Log.d(TAG, "Registering " + DEVICE_ID);
@@ -197,7 +198,7 @@ public class ArtikCloudSession {
 
                     try {
                         Log.d(TAG, "DeviceChannelWebSocket::onOpen: registering" + DEVICE_ID);
-                        mWS.registerChannel(registerMessage);
+                        mDeviceChannelWS.registerChannel(registerMessage);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -260,31 +261,31 @@ public class ArtikCloudSession {
      * Closes a websocket /websocket connection
      */
     public void disconnectDeviceChannelWS() {
-        if (mWS != null) {
+        if (mDeviceChannelWS != null) {
             try {
-                mWS.close();
+                mDeviceChannelWS.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        mWS = null;
+        mDeviceChannelWS = null;
     }
 
     public void connectDeviceChannelWS() {
         createDeviceChannelWebSockets();
         try {
-            mWS.connect();
+            mDeviceChannelWS.connect();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void sendOnActionInDeviceChannelWS() {
-        sendActionInDeviceChannelWS(ACTION_NAME_ON);
+        new sendActionInBackground().execute(ACTION_NAME_ON);
     }
 
     public void sendOffActionInDeviceChannelWS() {
-        sendActionInDeviceChannelWS(ACTION_NAME_OFF);
+        new sendActionInBackground().execute(ACTION_NAME_OFF);
     }
 
     /*
@@ -313,19 +314,39 @@ public class ArtikCloudSession {
 
         action.setName(actionName);
         actions.add(action);
-        actionDetailsArray.setTags(actions);
+        actionDetailsArray.setActions(actions);
         actionIn.setData(actionDetailsArray);
         actionIn.setCid(actionName);
         actionIn.setDdid(DEVICE_ID);
         actionIn.setTs(System.currentTimeMillis());
 
         try {
-            mWS.sendAction(actionIn);
+            mDeviceChannelWS.sendAction(actionIn);
             Log.d(TAG, "DeviceChannelWebSocket sendAction:" + actionIn.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
+
+    class sendActionInBackground extends AsyncTask<String, Void, Void> {
+        final static String TAG = "sendActionInBackground";
+        @Override
+        protected Void doInBackground(String... actionName) {
+            try {
+                sendActionInDeviceChannelWS(actionName[0]);
+            } catch (Exception e) {
+                Log.v(TAG, "::doInBackground run into Exception");
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            // Do nothing!
+        }
+    }
+
 
 }

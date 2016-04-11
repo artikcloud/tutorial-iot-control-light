@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">ARTIKIoTControllerSimple</string>
+    <string name="app_name">ACIoTController</string>
     <string name="device_name">Device Name</string>
     <string name="device_id">Device ID</string>
     <string name="device_status">Device Status</string>
