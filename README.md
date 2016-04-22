@@ -32,7 +32,7 @@ More about ARTIK Cloud
 
 If you are not familiar with ARTIK Cloud, we have extensive documentation at https://developer.artik.cloud/documentation
 
-The full ARTIK Cloud API specification can be found at https://developer.artik.cloud/documentation/api-spec
+The full ARTIK Cloud API specification can be found at https://developer.artik.cloud/documentation/api-reference/
 
 Check out advanced sample applications at https://developer.artik.cloud/documentation/samples/
 
