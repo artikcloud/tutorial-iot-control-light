@@ -96,11 +96,10 @@ public class LoginActivity extends Activity {
     {
         Log.d(TAG, "onGetAccessToken(" + accessToken +")");
         ArtikCloudSession.getInstance().setAccessToken(accessToken);
-        ArtikCloudSession.getInstance().setupArtikCloudRestApis();
-        startRuleActivity();
+        startControlActivity();
     }
 
-    private void startRuleActivity() {
+    private void startControlActivity() {
         Intent activityIntent = new Intent(this, ControlActivity.class);
         startActivity(activityIntent);
     }

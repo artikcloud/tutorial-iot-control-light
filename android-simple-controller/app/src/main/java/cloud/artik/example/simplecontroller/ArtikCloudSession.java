@@ -29,7 +29,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import cloud.artik.api.UsersApi;
-import cloud.artik.client.ApiClient;
 import cloud.artik.model.Acknowledgement;
 import cloud.artik.model.ActionDetails;
 import cloud.artik.model.ActionDetailsArray;
@@ -45,10 +44,10 @@ import cloud.artik.websocket.FirehoseWebSocket;
 public class ArtikCloudSession {
     private final static String TAG = ArtikCloudSession.class.getSimpleName();
 
-    // Copy them from the corresponding application in the Developer Dashboard
+    // Copy from the corresponding application in the Developer Dashboard
     public static final String CLIENT_ID = "<YOUR CLIENT ID>";
 
-    // Copy them from the Device Info screen in My ARTIK Cloud
+    // Copy from the Device Info screen in My ARTIK Cloud
     private final static String DEVICE_ID = "<YOUR DEVICE ID>";
 
     private static final String ARTIK_CLOUD_AUTH_BASE_URL = "https://accounts.artik.cloud";
@@ -127,14 +126,6 @@ public class ArtikCloudSession {
          //https://accounts.artik.cloud/authorize?client=mobile&client_id=xxxx&response_type=token&redirect_uri=http://localhost:8000/acdemo/index.php
         return ARTIK_CLOUD_AUTH_BASE_URL + "/authorize?client=mobile&response_type=token&" +
                 "client_id=" + CLIENT_ID + "&redirect_uri=" + REDIRECT_URL;
-    }
-
-    public void setupArtikCloudRestApis() {
-        ApiClient apiClient = new ApiClient();
-        apiClient.setAccessToken(mAccessToken);
-        apiClient.setDebugging(true);
-
-        mUsersApi = new UsersApi(apiClient);
     }
 
     public void reset() {
