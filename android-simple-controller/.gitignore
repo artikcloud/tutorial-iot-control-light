@@ -29,6 +29,7 @@ proguard/
 # Gradle files
 .gradle/
 build/
+gradle.properties
 
 # Misc
 .DS_Store

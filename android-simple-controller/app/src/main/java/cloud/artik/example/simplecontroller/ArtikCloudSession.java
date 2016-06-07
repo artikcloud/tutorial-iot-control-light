@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 
+import cloud.artik.api.UsersApi;
+import cloud.artik.client.ApiClient;
 import cloud.artik.model.Acknowledgement;
 import cloud.artik.model.ActionDetails;
 import cloud.artik.model.ActionDetailsArray;
@@ -42,8 +44,16 @@ import cloud.artik.websocket.FirehoseWebSocket;
 
 public class ArtikCloudSession {
     private final static String TAG = ArtikCloudSession.class.getSimpleName();
+
+    // Copy them from the corresponding application in the Developer Dashboard
+    public static final String CLIENT_ID = "<YOUR CLIENT ID>";
+
+    // Copy them from the Device Info screen in My ARTIK Cloud
     private final static String DEVICE_ID = "<YOUR DEVICE ID>";
-    private final static String DEVICE_TOKEN = "<YOUR DEVICE TOKEN>";
+
+    private static final String ARTIK_CLOUD_AUTH_BASE_URL = "https://accounts.artik.cloud";
+    public static final String REDIRECT_URL = "android-app://redirect";
+
     private final static String DEVICE_NAME = "Smart Light";
     private final static String ACTION_NAME_ON = "setOn";
     private final static String ACTION_NAME_OFF = "setOff";
@@ -77,6 +87,10 @@ public class ArtikCloudSession {
     public final static String ACK = "ack";
     public final static String ERROR = "error";
 
+    private UsersApi mUsersApi = null;
+    private String mAccessToken = null;
+    private String mUserId = null;
+
     private FirehoseWebSocket mFirehoseWS = null; //  end point: /live
     private DeviceChannelWebSocket mDeviceChannelWS = null; // end point: /websocket
 
@@ -100,11 +114,42 @@ public class ArtikCloudSession {
         return DEVICE_NAME;
     }
 
+    public void setAccessToken(String token) {
+        if (token == null || token.length() <= 0) {
+            Log.e(TAG, "Attempt to set an invalid token");
+            mAccessToken = null;
+            return;
+        }
+        mAccessToken = token;
+    }
+
+    public String getAuthorizationRequestUri() {
+         //https://accounts.artik.cloud/authorize?client=mobile&client_id=xxxx&response_type=token&redirect_uri=http://localhost:8000/acdemo/index.php
+        return ARTIK_CLOUD_AUTH_BASE_URL + "/authorize?client=mobile&response_type=token&" +
+                "client_id=" + CLIENT_ID + "&redirect_uri=" + REDIRECT_URL;
+    }
+
+    public void setupArtikCloudRestApis() {
+        ApiClient apiClient = new ApiClient();
+        apiClient.setAccessToken(mAccessToken);
+        apiClient.setDebugging(true);
+
+        mUsersApi = new UsersApi(apiClient);
+    }
+
+    public void reset() {
+        mUsersApi = null;
+        mAccessToken = null;
+        mUserId = null;
+        mFirehoseWS = null;
+        mDeviceChannelWS = null;
+    }
+
     private void createFirehoseWebsocket() {
         try {
             OkHttpClient client = new OkHttpClient();
             client.setRetryOnConnectionFailure(true);
-            mFirehoseWS = new FirehoseWebSocket(client, DEVICE_TOKEN, DEVICE_ID, null, null, null, new ArtikCloudWebSocketCallback() {
+            mFirehoseWS = new FirehoseWebSocket(client, mAccessToken, DEVICE_ID, null, null, null, new ArtikCloudWebSocketCallback() {
                 @Override
                 public void onOpen(int i, String s) {
                     Log.d(TAG, "FirehoseWebSocket: onOpen()");
@@ -149,9 +194,7 @@ public class ArtikCloudSession {
                     Log.d(TAG, "FirehoseWebSocket::onPing: " + timestamp);
                 }
             });
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (URISyntaxException|IOException e) {
             e.printStackTrace();
         }
     }
@@ -192,7 +235,7 @@ public class ArtikCloudSession {
                     LocalBroadcastManager.getInstance(ourContext).sendBroadcast(intent);
 
                     RegisterMessage registerMessage = new RegisterMessage();
-                    registerMessage.setAuthorization("bearer " + DEVICE_TOKEN);
+                    registerMessage.setAuthorization("bearer " + mAccessToken);
                     registerMessage.setCid("myRegisterMessage");
                     registerMessage.setSdid(DEVICE_ID);
 

@@ -34,8 +34,8 @@ import java.text.DateFormat;
 import java.util.Date;
 
 
-public class MainActivity  extends Activity {
-    private static final String TAG = MainActivity.class.getSimpleName();
+public class ControlActivity extends Activity {
+    private static final String TAG = ControlActivity.class.getSimpleName();
     private TextView mLiveStatus;
     private TextView mDeviceStatus;
     private TextView mStatusUpdateTime;
