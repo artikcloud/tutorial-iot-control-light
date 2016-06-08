@@ -22,8 +22,6 @@ import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.squareup.okhttp.OkHttpClient;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -138,9 +136,7 @@ public class ArtikCloudSession {
 
     private void createFirehoseWebsocket() {
         try {
-            OkHttpClient client = new OkHttpClient();
-            client.setRetryOnConnectionFailure(true);
-            mFirehoseWS = new FirehoseWebSocket(client, mAccessToken, DEVICE_ID, null, null, null, new ArtikCloudWebSocketCallback() {
+            mFirehoseWS = new FirehoseWebSocket(mAccessToken, DEVICE_ID, null, null, null, new ArtikCloudWebSocketCallback() {
                 @Override
                 public void onOpen(int i, String s) {
                     Log.d(TAG, "FirehoseWebSocket: onOpen()");
@@ -215,10 +211,7 @@ public class ArtikCloudSession {
 
     private void createDeviceChannelWebSockets() {
         try {
-            OkHttpClient client = new OkHttpClient();
-            client.setRetryOnConnectionFailure(true);
-
-            mDeviceChannelWS = new DeviceChannelWebSocket(true, client, new ArtikCloudWebSocketCallback() {
+            mDeviceChannelWS = new DeviceChannelWebSocket(true, new ArtikCloudWebSocketCallback() {
                 @Override
                 public void onOpen(int i, String s) {
                     Log.d(TAG, "Registering " + DEVICE_ID);
