@@ -284,9 +284,7 @@ public class ArtikCloudSession {
                     Log.d(TAG, "DeviceChannelWebSocket::onPing: " + timestamp);
                 }
             });
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (URISyntaxException|IOException e) {
             e.printStackTrace();
         }
     }
