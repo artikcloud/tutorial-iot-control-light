@@ -18,7 +18,6 @@ package cloud.artik.example.simplecontroller;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 
-import cloud.artik.api.UsersApi;
 import cloud.artik.model.Acknowledgement;
 import cloud.artik.model.ActionDetails;
 import cloud.artik.model.ActionDetailsArray;
@@ -84,9 +82,7 @@ public class ArtikCloudSession {
     public final static String ACK = "ack";
     public final static String ERROR = "error";
 
-    private UsersApi mUsersApi = null;
     private String mAccessToken = null;
-    private String mUserId = null;
 
     private FirehoseWebSocket mFirehoseWS = null; //  end point: /live
     private DeviceChannelWebSocket mDeviceChannelWS = null; // end point: /websocket
@@ -127,9 +123,7 @@ public class ArtikCloudSession {
     }
 
     public void reset() {
-        mUsersApi = null;
         mAccessToken = null;
-        mUserId = null;
         mFirehoseWS = null;
         mDeviceChannelWS = null;
     }
@@ -306,11 +300,11 @@ public class ArtikCloudSession {
     }
 
     public void sendOnActionInDeviceChannelWS() {
-        new sendActionInBackground().execute(ACTION_NAME_ON);
+        sendActionInDeviceChannelWS(ACTION_NAME_ON);
     }
 
     public void sendOffActionInDeviceChannelWS() {
-        new sendActionInBackground().execute(ACTION_NAME_OFF);
+        sendActionInDeviceChannelWS(ACTION_NAME_OFF);
     }
 
     /*
@@ -352,25 +346,6 @@ public class ArtikCloudSession {
             e.printStackTrace();
         }
 
-    }
-
-    class sendActionInBackground extends AsyncTask<String, Void, Void> {
-        final static String TAG = "sendActionInBackground";
-        @Override
-        protected Void doInBackground(String... actionName) {
-            try {
-                sendActionInDeviceChannelWS(actionName[0]);
-            } catch (Exception e) {
-                Log.v(TAG, "::doInBackground run into Exception");
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-            // Do nothing!
-        }
     }
 
 

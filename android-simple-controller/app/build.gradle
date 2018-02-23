@@ -24,8 +24,16 @@ android {
     }
 }
 
+//// Uncomment the following if using artikcloud sdk locally build (in local maven repository)
+//allprojects {
+//    repositories {
+//        mavenLocal()    // use local maven repository
+//    }
+//}
 
 dependencies {
-    compile 'cloud.artik:artikcloud-java:2.2.1'
+    // TODO: replace the version by the one released to maven (deliverable of DX-1596)
+    compile 'cloud.artik:artikcloud-java:3.0.0-alpha-0'
+
     compile 'com.android.support:appcompat-v7:25.3.1'
 }
